@@ -204,7 +204,9 @@ trained models, per-sample memorization scores (CSV), MIA results (JSON),
 rarity/statistical analyses, and figures.
 
 ## Acknowledgements
-The differential-training and memorization-scoring implementation adapts code
+Portions of the differential-training / memorization-scoring code are adapted
 from "Localizing Memorization in SSL Vision Encoders" (Wang, Dziedzic, Backes,
-Boenisch, NeurIPS 2024), released at
-https://github.com/sprintml/LocalizingMemorizationInSSL.
+Boenisch, NeurIPS 2024), https://github.com/sprintml/LocalizingMemorizationInSSL;
+the remainder is original to this project. Two authors of that work are
+co-authors of the present study. Adapted source files carry an attribution
+note at the top.
