@@ -1,0 +1,135 @@
+# =============================================================================
+# Kvasir-Capsule Distinctive Feature Experiment - Grayscale
+# Target rare + visually distinctive classes: foreign_body (1.6%), erosion (1.1%)
+#
+# foreign_body: Visually distinctive (non-biological objects in GI tract).
+# Baseline M(x)=+0.77 (ViT), +2.03 (MAE). Color may be important for detection.
+# erosion: Red/inflamed patches on mucosa. Baseline M(x)=+1.45 (ViT).
+# Grayscale should destroy color-based distinctiveness (similar to akiec in HAM10000).
+#
+# NOT targeting: blood_hematin (n=1 in canary), ampulla_of_vater (n=1) —
+# too few samples for meaningful statistics.
+# =============================================================================
+
+name: kvasir_distinctive
+description: |
+  Feature distinctiveness experiment on Kvasir-Capsule.
+  Rare disease classes (foreign_body 1.6%, erosion 1.1%) are converted to grayscale
+  while all other classes remain color. Tests whether removing color-based
+  distinctiveness reduces memorization of these rare GI tract findings.
+
+dataset: kvasir_capsule
+
+distinctive_classes:
+  - foreign_body
+  - erosion
+
+models:
+  - resnet50
+  - vit
+
+training:
+  seed: 42
+  device: cuda
+  amp: true
+  epochs: 30
+  early_stopping:
+    enabled: false
+    patience: 10
+    monitor: val_accuracy
+  save_best: true
+  save_last: true
+
+evaluation:
+  memorization:
+    enabled: true
+    num_augmentations: 10
+    save_per_sample_scores: true
+    high_risk_threshold: 0.3
+    moderate_risk_threshold: 0.1
+  metrics:
+    - accuracy
+    - f1_score
+    - precision
+    - recall
+    - per_class_accuracy
+  statistical_tests:
+    enabled: true
+    tests:
+      - ttest_ind
+      - anova
+      - cohens_d
+      - wilcoxon
+    multiple_comparison_correction: bonferroni
+    alpha: 0.05
+    confidence_level: 0.95
+    bootstrap_samples: 1000
+
+visualization:
+  enabled: true
+  plots:
+    - type: histogram_comparison
+      title: "Memorization Distribution (Kvasir Distinctive)"
+      filename: fig1_comparison_histograms.png
+      dpi: 300
+    - type: boxplot_comparison
+      title: "Memorization Box Plots (Kvasir Distinctive)"
+      filename: fig2_comparison_boxplots.png
+      dpi: 300
+    - type: disease_comparison
+      title: "Memorization by Disease Class (Distinctive)"
+      filename: fig5_disease_comparison.png
+      dpi: 300
+  style: seaborn-v0_8-darkgrid
+  dpi: 300
+  format: png
+
+output:
+  base_dir: results/kvasir_distinctive
+  directories:
+    checkpoints: checkpoints
+    memorization: memorization
+    figures: figures
+    tables: tables
+    logs: logs
+  save_checkpoints: true
+  save_scores: true
+  save_figures: true
+  save_tables: true
+  save_logs: true
+  save_config: true
+
+analysis:
+  summary_stats: [mean, std, median, min, max, q25, q75]
+  risk_levels:
+    high_threshold: 0.3
+    moderate_threshold: 0.1
+  disease_analysis:
+    enabled: true
+    compute_correlations: true
+
+reproducibility:
+  save_config: true
+  deterministic: true
+  seed: 42
+
+validation:
+  check_data_exists: true
+  check_splits_exist: true
+  required_splits: [train, canary, test]
+  min_samples:
+    train: 50
+    canary: 20
+    test: 20
+
+resources:
+  max_gpu_memory_gb: 40
+  empty_cache_frequency: 10
+
+metadata:
+  experiment_type: distinctive_feature_experiment
+  research_question: "Does grayscale destroy color-based memorization in Kvasir rare classes?"
+  approach: "Grayscale conversion of foreign_body (1.6%) and erosion (1.1%)"
+  domain: gastroenterology
+  imaging_modality: video_capsule_endoscopy
+  parent_experiment: kvasir_baseline

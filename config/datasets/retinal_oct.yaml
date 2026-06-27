@@ -1,0 +1,37 @@
+# Retinal OCT Dataset Configuration
+# Optical Coherence Tomography images for retinal disease classification
+
+name: retinal_oct
+description: Retinal OCT Images - Kermany et al. 2018
+
+info:
+  num_classes: 4
+  modality: Optical Coherence Tomography (OCT)
+  domain: Ophthalmology
+  source: https://www.kaggle.com/datasets/paultimothymooney/kermany2018
+
+paths:
+  images: data/retinal_oct/images
+  metadata: data/retinal_oct/metadata.csv
+
+classes:
+  names:
+    - CNV      # Choroidal Neovascularization
+    - DME      # Diabetic Macular Edema
+    - DRUSEN   # Early AMD
+    - NORMAL   # Normal retina
+
+  descriptions:
+    CNV: "Choroidal Neovascularization - abnormal blood vessel growth"
+    DME: "Diabetic Macular Edema - fluid accumulation from diabetes"
+    DRUSEN: "Drusen deposits - early age-related macular degeneration"
+    NORMAL: "Normal healthy retina"
+
+preprocessing:
+  target_size: 224
+  normalize:
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+
+augmentation:
+  use_dataset_default: true

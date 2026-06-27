@@ -1,0 +1,316 @@
+# =============================================================================
+# Kvasir-Capsule Baseline Experiment Configuration - PUBLICATION VERSION
+# Extreme class imbalance dataset for rare disease memorization hypothesis
+# =============================================================================
+
+name: kvasir_capsule_baseline_comparison
+description: |
+  Kvasir-Capsule Video Capsule Endoscopy dataset analysis.
+
+  This dataset has EXTREME class imbalance (3434:1 ratio):
+  - 6 classes with <2% prevalence (RARE)
+  - 4 classes with <0.5% prevalence (VERY RARE)
+  - 2 classes with <0.1% prevalence (EXTREMELY RARE: 10-12 samples)
+
+  HYPOTHESIS TEST: Rare disease patients are memorized more than common patients.
+  This dataset provides the strongest test case due to extreme imbalance.
+
+  PUBLICATION SETTINGS:
+  - Fixed random seed (42) for reproducibility
+  - 30 epochs training
+  - Full 14-class classification
+  - Statistical tests with multiple comparison correction
+
+# Dataset
+dataset: kvasir_capsule
+
+# Models to train and evaluate
+models:
+  - mae          # Baseline: trained from scratch
+  - resnet50     # ImageNet-1K (1.28M images)
+  - vit          # ImageNet-21K (14M images)
+  - medsam       # Medical (1.57M images)
+
+# Global training settings
+training:
+  seed: 42
+  device: cuda
+
+  # Enable mixed precision for better GPU utilization
+  amp: true
+
+  # PUBLICATION: 30 epochs
+  epochs: 30
+
+  # Early stopping
+  early_stopping:
+    enabled: false
+    patience: 10
+    monitor: val_accuracy
+
+  # Checkpointing
+  save_best: true
+  save_last: true
+
+  # Class imbalance handling
+  # Note: We intentionally do NOT use class weighting to observe
+  # natural memorization patterns with extreme imbalance
+  weighted_loss: false
+
+# Evaluation settings
+evaluation:
+  # Memorization measurement
+  memorization:
+    enabled: true
+    num_augmentations: 10
+    save_per_sample_scores: true
+
+    # Risk thresholds
+    high_risk_threshold: 0.3
+    moderate_risk_threshold: 0.1
+
+  # Standard metrics
+  metrics:
+    - accuracy
+    - f1_score
+    - precision
+    - recall
+    - per_class_accuracy
+
+  # Statistical tests - CRITICAL for rare disease hypothesis
+  statistical_tests:
+    enabled: true
+    tests:
+      - ttest_ind
+      - anova
+      - cohens_d
+      - wilcoxon
+      - spearman_correlation
+      - mann_whitney
+
+    multiple_comparison_correction: bonferroni
+    alpha: 0.05
+    confidence_level: 0.95
+    bootstrap_samples: 1000
+
+# Visualization
+visualization:
+  enabled: true
+
+  plots:
+    - type: histogram_comparison
+      title: "Memorization Distribution Across Models"
+      filename: fig1_comparison_histograms.png
+      dpi: 300
+
+    - type: boxplot_comparison
+      title: "Memorization Box Plots"
+      filename: fig2_comparison_boxplots.png
+      dpi: 300
+
+    - type: violin_plot
+      title: "Memorization Violin Plots"
+      filename: fig3_comparison_violins.png
+      dpi: 300
+
+    - type: summary_bars
+      title: "Mean Memorization by Model"
+      filename: fig4_summary_bars.png
+      dpi: 300
+
+    - type: disease_comparison
+      title: "Memorization by Disease Class"
+      filename: fig5_disease_comparison.png
+      dpi: 300
+
+    - type: disease_heatmap
+      title: "Model x Disease Heatmap"
+      filename: fig6_disease_heatmap.png
+      dpi: 300
+
+    - type: top_memorized
+      title: "Most Memorized Patients"
+      filename: fig7_top_memorized.png
+      n_samples: 20
+      dpi: 300
+
+    - type: statistical_comparison
+      title: "Statistical Significance Tests"
+      filename: fig8_statistics.png
+      dpi: 300
+
+    - type: rarity_vs_memorization
+      title: "Class Frequency vs Memorization"
+      filename: fig9_rarity_correlation.png
+      dpi: 300
+
+  style: seaborn-v0_8-darkgrid
+  dpi: 300
+  format: png
+  font_size: 11
+  title_size: 14
+  label_size: 12
+
+# Output settings
+output:
+  base_dir: results/kvasir_baseline
+
+  directories:
+    checkpoints: checkpoints
+    memorization: memorization
+    figures: figures
+    tables: tables
+    logs: logs
+
+  save_checkpoints: true
+  save_scores: true
+  save_figures: true
+  save_tables: true
+  save_logs: true
+  save_config: true
+
+  checkpoint_strategy: best
+
+  paper_outputs:
+    enabled: true
+    figures_dir: paper/figures
+    tables_dir: paper/tables
+    format: both
+
+# Analysis
+analysis:
+  summary_stats:
+    - mean
+    - std
+    - median
+    - min
+    - max
+    - q25
+    - q75
+    - iqr
+    - skewness
+    - kurtosis
+
+  risk_levels:
+    high_threshold: 0.3
+    moderate_threshold: 0.1
+
+  # Rarity analysis is CRITICAL for this dataset
+  rarity_analysis:
+    enabled: true
+    thresholds:
+      very_rare: 0.005      # <0.5%
+      rare: 0.02            # <2%
+      moderate: 0.05        # <5%
+      common: 0.15          # <15%
+      dominant: 1.0         # >=15%
+
+  disease_analysis:
+    enabled: true
+    compute_correlations: true
+    correlation_method: spearman  # Use Spearman for ordinal rarity
+
+  pairwise_comparisons:
+    - [mae, resnet50]
+    - [mae, vit]
+    - [mae, medsam]
+    - [resnet50, vit]
+    - [resnet50, medsam]
+    - [vit, medsam]
+
+# Reproducibility
+reproducibility:
+  save_config: true
+  save_environment: true
+  save_git_hash: true
+  save_random_states: true
+  save_command_line: true
+  deterministic: true
+  benchmark: false
+  seed: 42
+  cuda_seed: 42
+  numpy_seed: 42
+
+# Validation
+validation:
+  check_data_exists: true
+  check_splits_exist: true
+  check_image_files: true
+  check_model_configs: true
+  check_gpu_memory: true
+  required_splits: [train, canary, test]
+  min_samples:
+    train: 100
+    canary: 50
+    test: 50
+
+# Error handling
+error_handling:
+  strict_mode: false
+  save_on_error: true
+  retry_on_failure: false
+  max_retries: 3
+
+# Resources
+resources:
+  max_gpu_memory_gb: 40
+  empty_cache_frequency: 10
+  max_training_hours: 48
+  max_evaluation_hours: 4
+  checkpoint_disk_limit_gb: 100
+  results_disk_limit_gb: 50
+
+# Observation framework
+observation_framework:
+  research_question: |
+    Does extreme class imbalance (3434:1) amplify rare disease memorization?
+
+    The Kvasir-Capsule dataset is an ideal test case because:
+    1. Imbalance ratio is 50x greater than HAM10000 (56:1)
+    2. Multiple ultra-rare classes (<15 samples)
+    3. Clear clinical significance (GI tract pathologies)
+
+    Expected: Strong negative Spearman correlation (rho < -0.5)
+    between class frequency and memorization score.
+
+  sanity_checks:
+    min_valid_score: -2.0
+    max_valid_score: 5.0
+    max_high_risk_percentage: 60.0
+    max_std: 1.5
+
+# Metadata
+metadata:
+  experiment_type: baseline_comparison
+  research_question: "Does extreme class imbalance amplify rare disease memorization?"
+  approach: "14-class capsule endoscopy with 3434:1 imbalance ratio"
+
+  paper:
+    title: "Privacy Vulnerabilities in Fine-tuned Medical Foundation Models"
+    authors: ["Author 1", "Author 2"]
+    venue: "Medical AI Journal"
+    year: 2024
+
+  ethics:
+    irb_approved: false
+    data_anonymized: true
+    consent_obtained: true
+
+notes: |
+  KVASIR-CAPSULE EXPERIMENT - EXTREME IMBALANCE TEST
+
+  This dataset is the STRONGEST test case for the rare disease hypothesis:
+  - 3434:1 class imbalance ratio (vs 56:1 for HAM10000)
+  - Multiple classes with <15 samples
+  - Clinical GI tract pathologies
+
+  Expected outcomes:
+  1. Very strong negative Spearman correlation
+  2. Rare classes showing 10x+ higher memorization
+  3. Clear validation of hypothesis at extreme imbalance
+
+  Key classes to watch:
+  - ampulla_of_vater (10 samples): HIGHEST expected memorization
+  - blood_hematin (12 samples): Very high expected memorization
+  - polyp (55 samples): High expected memorization
+  - normal_clean_mucosa (34,338 samples): LOWEST expected memorization

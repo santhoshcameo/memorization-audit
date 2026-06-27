@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "medmem"
+version = "1.0.0"
+description = "Memorization auditing for medical AI models — gold-standard differential training pipeline"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+dependencies = [
+    "torch>=1.12",
+    "torchvision>=0.13",
+    "timm>=0.9",
+    "numpy>=1.21",
+    "pandas>=1.4",
+    "scipy>=1.7",
+    "scikit-learn>=1.0",
+    "Pillow>=9.0",
+]
+
+[project.scripts]
+medmem = "medmem.__main__:main"
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["medmem*"]

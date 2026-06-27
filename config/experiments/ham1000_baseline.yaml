@@ -1,0 +1,358 @@
+# =============================================================================
+# Baseline Experiment Configuration - PUBLICATION VERSION
+# Systematic comparison of memorization across four training paradigms
+# =============================================================================
+
+name: ham1000_baseline_comparison
+description: |
+  Systematic comparison of memorization across four training paradigms:
+  1. Training from scratch (MAE)
+  2. General-domain CNN (ResNet50/ImageNet-1K)
+  3. Large-scale Transformer (ViT/ImageNet-21K)
+  4. Medical-domain Transformer (MedSAM/Medical)
+  
+  PUBLICATION SETTINGS:
+  - Fixed random seed (42) for reproducibility
+  - Proper epoch counts (30 epochs)
+  - Validation on test set
+  - Statistical tests with multiple comparison correction
+  - Publication-quality figures
+
+# Dataset
+dataset: ham10000
+
+# Models to train and evaluate
+models:
+  - mae          # Baseline: trained from scratch
+  - resnet50     # ImageNet-1K (1.28M images)
+  - vit          # ImageNet-21K (14M images)
+  - medsam       # Medical (1.57M images)
+
+# Global training settings
+training:
+  seed: 42
+  device: cuda
+  # num_workers is auto-detected from gpu_profiles.yaml based on GPU memory
+  # Do not set here unless you need to override
+
+  # Enable mixed precision for better GPU utilization
+  amp: true
+
+  # CRITICAL: Use proper epoch counts for publication
+  # These override model-specific configs if needed
+  epochs: 30
+  
+  # Early stopping (optional)
+  early_stopping:
+    enabled: false
+    patience: 10
+    monitor: val_accuracy
+  
+  # Checkpointing
+  save_best: true
+  save_last: true
+
+# Evaluation settings
+evaluation:
+  # Memorization measurement
+  memorization:
+    enabled: true
+    num_augmentations: 10  # Increased for robust measurement
+    save_per_sample_scores: true
+    
+    # Risk thresholds
+    high_risk_threshold: 0.3
+    moderate_risk_threshold: 0.1
+  
+  # Standard metrics
+  metrics:
+    - accuracy
+    - f1_score
+    - precision
+    - recall
+    - per_class_accuracy
+  
+  # Statistical tests
+  statistical_tests:
+    enabled: true
+    tests:
+      - ttest_ind        # T-test for pairwise comparison
+      - anova            # ANOVA for all models
+      - cohens_d         # Effect size
+      - wilcoxon         # Non-parametric alternative
+    
+    # Multiple comparison correction
+    multiple_comparison_correction: bonferroni
+    alpha: 0.05
+    
+    # Confidence intervals
+    confidence_level: 0.95
+    bootstrap_samples: 1000
+
+# Visualization
+visualization:
+  enabled: true
+  
+  # Plot specifications
+  plots:
+    # Main comparison plots
+    - type: histogram_comparison
+      title: "Memorization Distribution Across Models"
+      filename: fig1_comparison_histograms.png
+      dpi: 300
+    
+    - type: boxplot_comparison
+      title: "Memorization Box Plots"
+      filename: fig2_comparison_boxplots.png
+      dpi: 300
+    
+    - type: violin_plot
+      title: "Memorization Violin Plots"
+      filename: fig3_comparison_violins.png
+      dpi: 300
+    
+    - type: summary_bars
+      title: "Mean Memorization by Model"
+      filename: fig4_summary_bars.png
+      dpi: 300
+    
+    # Disease-specific analysis
+    - type: disease_comparison
+      title: "Memorization by Disease Class"
+      filename: fig5_disease_comparison.png
+      dpi: 300
+    
+    - type: disease_heatmap
+      title: "Model × Disease Heatmap"
+      filename: fig6_disease_heatmap.png
+      dpi: 300
+    
+    # Top memorized samples
+    - type: top_memorized
+      title: "Most Memorized Patients"
+      filename: fig7_top_memorized.png
+      n_samples: 20
+      dpi: 300
+    
+    # Statistical comparisons
+    - type: statistical_comparison
+      title: "Statistical Significance Tests"
+      filename: fig8_statistics.png
+      dpi: 300
+    
+    # Distribution analysis
+    - type: kde_plot
+      title: "Kernel Density Estimation"
+      filename: fig9_kde.png
+      dpi: 300
+  
+  # Style
+  style: seaborn-v0_8-darkgrid
+  dpi: 300
+  format: png
+  
+  # Font sizes
+  font_size: 11
+  title_size: 14
+  label_size: 12
+
+# Output settings
+output:
+  base_dir: results/ham1000_baseline
+  
+  # Directory structure
+  directories:
+    checkpoints: checkpoints
+    memorization: memorization
+    figures: figures
+    tables: tables
+    logs: logs
+  
+  # What to save
+  save_checkpoints: true
+  save_scores: true
+  save_figures: true
+  save_tables: true
+  save_logs: true
+  save_config: true
+  
+  # Checkpoint strategy
+  checkpoint_strategy: best  # best, last, all
+  
+  # Generate paper-ready outputs
+  paper_outputs:
+    enabled: true
+    figures_dir: paper/figures
+    tables_dir: paper/tables
+    format: both  # latex, csv, both
+
+# Analysis
+analysis:
+  # Summary statistics
+  summary_stats:
+    - mean
+    - std
+    - median
+    - min
+    - max
+    - q25         # 25th percentile
+    - q75         # 75th percentile
+    - iqr         # Interquartile range
+    - skewness
+    - kurtosis
+  
+  # Risk categorization
+  risk_levels:
+    high_threshold: 0.3
+    moderate_threshold: 0.1
+  
+  # Per-disease analysis
+  disease_analysis:
+    enabled: true
+    compute_correlations: true
+    correlation_method: pearson
+  
+  # Pairwise comparisons (all combinations)
+  pairwise_comparisons:
+    - [mae, resnet50]
+    - [mae, vit]
+    - [mae, medsam]
+    - [resnet50, vit]
+    - [resnet50, medsam]
+    - [vit, medsam]
+
+# Reproducibility
+reproducibility:
+  # Save everything for full reproducibility
+  save_config: true
+  save_environment: true
+  save_git_hash: true
+  save_random_states: true
+  save_command_line: true
+  
+  # Deterministic mode
+  deterministic: true
+  benchmark: false  # Faster but less reproducible
+  
+  # Seeds
+  seed: 42
+  cuda_seed: 42
+  numpy_seed: 42
+
+# Validation
+validation:
+  # Validate setup before running
+  check_data_exists: true
+  check_splits_exist: true
+  check_image_files: true
+  check_model_configs: true
+  check_gpu_memory: true
+  
+  # Required splits
+  required_splits: [train, canary, test]
+  
+  # Minimum samples per split
+  min_samples:
+    train: 100
+    canary: 50
+    test: 50
+
+# Error handling
+error_handling:
+  # Continue on error or fail fast
+  strict_mode: false  # Set to true for production
+  
+  # Save partial results
+  save_on_error: true
+  
+  # Retry failed steps
+  retry_on_failure: false
+  max_retries: 3
+
+# Resources
+resources:
+  # GPU memory management
+  max_gpu_memory_gb: 40
+  empty_cache_frequency: 10
+  
+  # Training limits
+  max_training_hours: 48
+  max_evaluation_hours: 4
+  
+  # Disk space
+  checkpoint_disk_limit_gb: 100
+  results_disk_limit_gb: 50
+
+# Notifications (optional)
+notifications:
+  enabled: false
+  email: your.email@example.com
+  on_complete: true
+  on_error: true
+  on_milestone: false
+
+# Observation framework (no hypothesis bias - we observe what happens)
+observation_framework:
+  research_question: |
+    How does pretraining paradigm affect memorization of patient data?
+    We compare four approaches without predicting specific outcomes:
+    - MAE: Random initialization (no pretraining)
+    - ResNet50: ImageNet-1K pretrained (1.28M natural images)
+    - ViT: ImageNet-21K pretrained (14M natural images)
+    - MedSAM: Medical domain pretrained (1.57M medical images)
+
+  # Sanity checks (data quality, not hypothesis validation)
+  sanity_checks:
+    # All models should produce valid memorization scores
+    min_valid_score: -1.0
+    max_valid_score: 5.0
+
+    # All models should have < 50% high-risk samples (otherwise data issue)
+    max_high_risk_percentage: 50.0
+
+    # Standard deviations should be reasonable (not extreme)
+    max_std: 1.0
+
+# Metadata
+metadata:
+  experiment_type: baseline_comparison
+  research_question: "How does pretraining paradigm affect memorization of patient data?"
+  approach: "Systematic comparison across four training paradigms without prediction bias"
+  
+  # Paper information
+  paper:
+    title: "Privacy Vulnerabilities in Fine-tuned Medical Foundation Models"
+    authors: ["Author 1", "Author 2"]
+    venue: "Medical AI Journal"
+    year: 2024
+  
+  # Ethics
+  ethics:
+    irb_approved: false  # Set to true if approved
+    data_anonymized: true
+    consent_obtained: true
+
+# Notes
+notes: |
+  BASELINE EXPERIMENT - PUBLICATION VERSION
+  
+  This is the main comparison for the paper. Results will be audited.
+  
+  Key points:
+  1. Fixed seed (42) for reproducibility
+  2. Proper epoch counts (50)
+  3. Augmentation properly applied in memorization measurement
+  4. Statistical tests with multiple comparison correction
+  5. Publication-quality figures (300 DPI)
+  
+  Before running:
+  1. Run: python scripts/preprocess_data.py --dataset ham10000
+  2. Verify splits exist
+  3. Check disk space (need ~50GB)
+  4. Ensure GPU available (or set device: cpu)
+  
+  Expected runtime:
+  - Training: ~8-10 hours (4 models × 2 variants × 30 epochs)
+  - Evaluation: ~30-60 minutes
+  - Visualization: ~5 minutes
+  - Total: ~10-12 hours with GPU

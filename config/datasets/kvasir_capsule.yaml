@@ -1,0 +1,143 @@
+name: kvasir_capsule
+description: Kvasir-Capsule Wireless Capsule Endoscopy Dataset for GI Tract Classification
+info:
+  full_name: Kvasir-Capsule Video Capsule Endoscopy Dataset
+  paper: https://www.nature.com/articles/s41597-021-00920-z
+  source: https://datasets.simula.no/kvasir-capsule/
+  license: Creative Commons Attribution 4.0 International
+  num_images: 47238
+  num_classes: 14
+  image_size:
+  - 336
+  - 336
+  domain: gastrointestinal endoscopy
+  modality: video capsule endoscopy
+
+paths:
+  images: data/kvasir_capsule/images
+  metadata: data/kvasir_capsule/kvasir_capsule_metadata.csv
+
+# Splits are created by download script with stratification
+# Special handling for extremely rare classes (n < 15)
+splits:
+  train: 33067  # ~70% (approximate)
+  canary: 7086  # ~15% (approximate)
+  test: 7085    # ~15% (approximate)
+
+# 14 classes with EXTREME imbalance (3434:1 ratio)
+# This is ideal for testing rare disease memorization hypothesis
+classes:
+  names:
+  - ampulla_of_vater        # 10 samples (0.02%) - EXTREMELY RARE
+  - blood_hematin           # 12 samples (0.03%) - EXTREMELY RARE
+  - polyp                   # 55 samples (0.12%) - VERY RARE
+  - erythema                # 159 samples (0.34%) - VERY RARE
+  - blood_fresh             # 446 samples (0.94%) - RARE
+  - erosion                 # 506 samples (1.07%) - RARE
+  - lymphangiectasia        # 592 samples (1.25%) - RARE
+  - foreign_body            # 776 samples (1.64%) - RARE
+  - ulcer                   # 854 samples (1.81%) - RARE
+  - angiectasia             # 866 samples (1.83%) - RARE
+  - pylorus                 # 1529 samples (3.24%) - MODERATE
+  - reduced_mucosal_view    # 2906 samples (6.15%) - MODERATE
+  - ileocecal_valve         # 4189 samples (8.87%) - COMMON
+  - normal_clean_mucosa     # 34338 samples (72.7%) - DOMINANT
+
+  descriptions:
+    ampulla_of_vater: "Papilla of Vater - extremely rare (0.02%)"
+    blood_hematin: "Digested blood (hematin) - extremely rare (0.03%)"
+    polyp: "Gastrointestinal polyp - very rare (0.12%)"
+    erythema: "Redness/inflammation of mucosa - very rare (0.34%)"
+    blood_fresh: "Fresh blood in GI tract - rare (0.94%)"
+    erosion: "Superficial mucosal erosion - rare (1.07%)"
+    lymphangiectasia: "Dilated lymphatic vessels - rare (1.25%)"
+    foreign_body: "Foreign material in GI tract - rare (1.64%)"
+    ulcer: "Ulcerative lesion - rare (1.81%)"
+    angiectasia: "Vascular malformation - rare (1.83%)"
+    pylorus: "Pyloric sphincter - moderate (3.24%)"
+    reduced_mucosal_view: "Reduced visibility of mucosa - moderate (6.15%)"
+    ileocecal_valve: "Ileocecal valve visualization - common (8.87%)"
+    normal_clean_mucosa: "Normal healthy mucosa - dominant (72.7%)"
+
+  frequency:
+    ampulla_of_vater: extremely_rare
+    blood_hematin: extremely_rare
+    polyp: very_rare
+    erythema: very_rare
+    blood_fresh: rare
+    erosion: rare
+    lymphangiectasia: rare
+    foreign_body: rare
+    ulcer: rare
+    angiectasia: rare
+    pylorus: moderate
+    reduced_mucosal_view: moderate
+    ileocecal_valve: common
+    normal_clean_mucosa: dominant
+
+preprocessing:
+  target_size: 224
+  normalize:
+    mean:
+    - 0.485
+    - 0.456
+    - 0.406
+    std:
+    - 0.229
+    - 0.224
+    - 0.225
+
+augmentation:
+  train:
+    enabled: true
+    transforms:
+    - type: RandomResizedCrop
+      params:
+        size: 224
+        scale:
+        - 0.8
+        - 1.0
+    - type: RandomHorizontalFlip
+      params:
+        p: 0.5
+    - type: RandomVerticalFlip
+      params:
+        p: 0.5
+    - type: ColorJitter
+      params:
+        brightness: 0.3
+        contrast: 0.3
+        saturation: 0.3
+        hue: 0.1
+    - type: RandomRotation
+      params:
+        degrees: 30
+  memorization:
+    enabled: true
+    transforms:
+    - type: RandomResizedCrop
+      params:
+        size: 224
+    - type: RandomHorizontalFlip
+      params:
+        p: 0.5
+    - type: ColorJitter
+      params:
+        brightness: 0.6
+        contrast: 0.6
+        saturation: 0.6
+        hue: 0.15
+  val:
+    enabled: true
+    transforms:
+    - type: Resize
+      params:
+        size: 256
+    - type: CenterCrop
+      params:
+        size: 224
+
+dataloader:
+  shuffle: true
+  pin_memory: true
+  drop_last: false

@@ -1,0 +1,32 @@
+name: odir5k
+description: ODIR-5K Ocular Disease Recognition Dataset
+info:
+  num_classes: 8
+  modality: Fundus Photography
+  domain: Ophthalmology
+paths:
+  images: ./data/odir5k/images
+  metadata: ./data/odir5k/metadata.csv
+classes:
+  names:
+  - Normal
+  - Diabetes
+  - Glaucoma
+  - Cataract
+  - AMD
+  - Hypertension
+  - Myopia
+  - Other
+preprocessing:
+  target_size: 224
+  normalize:
+    mean:
+    - 0.485
+    - 0.456
+    - 0.406
+    std:
+    - 0.229
+    - 0.224
+    - 0.225
+augmentation:
+  use_dataset_default: true

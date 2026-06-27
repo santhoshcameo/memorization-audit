@@ -1,0 +1,149 @@
+# =============================================================================
+# ODIR-5K Distinctive Feature Experiment - Grayscale
+# Rare classes (Myopia, Glaucoma) converted to grayscale to induce
+# visual distinctiveness while keeping same rarity level.
+#
+# Hypothesis: ODIR-5K showed weak/null rarity effects in baseline
+# (d=0.04, power=10%) because its rare classes are NOT visually
+# distinctive from common classes. Inducing distinctiveness via grayscale
+# should create the memorization signal that was absent in baseline,
+# proving distinctiveness is required for rarity to drive memorization.
+# =============================================================================
+
+name: odir5k_distinctive
+description: |
+  Feature distinctiveness experiment on ODIR-5K.
+  Rare disease classes (Myopia, Glaucoma) are converted to grayscale
+  while all other classes remain color. This creates visual distinctiveness
+  at the SAME rarity level, isolating the effect of feature distinctiveness
+  on memorization. Tests whether inducing distinctiveness in non-distinctive
+  rare classes creates the memorization signal absent in baseline.
+
+dataset: odir5k
+
+distinctive_classes:
+  - Myopia
+  - Glaucoma
+
+models:
+  - resnet50
+  - vit
+
+training:
+  seed: 42
+  device: cuda
+  amp: true
+  epochs: 30
+  early_stopping:
+    enabled: false
+    patience: 10
+    monitor: val_accuracy
+  save_best: true
+  save_last: true
+
+evaluation:
+  memorization:
+    enabled: true
+    num_augmentations: 10
+    save_per_sample_scores: true
+    high_risk_threshold: 0.3
+    moderate_risk_threshold: 0.1
+  metrics:
+    - accuracy
+    - f1_score
+    - precision
+    - recall
+    - per_class_accuracy
+  statistical_tests:
+    enabled: true
+    tests:
+      - ttest_ind
+      - anova
+      - cohens_d
+      - wilcoxon
+    multiple_comparison_correction: bonferroni
+    alpha: 0.05
+    confidence_level: 0.95
+    bootstrap_samples: 1000
+
+visualization:
+  enabled: true
+  plots:
+    - type: histogram_comparison
+      title: "Memorization Distribution (ODIR-5K Distinctive)"
+      filename: fig1_comparison_histograms.png
+      dpi: 300
+    - type: boxplot_comparison
+      title: "Memorization Box Plots (ODIR-5K Distinctive)"
+      filename: fig2_comparison_boxplots.png
+      dpi: 300
+    - type: disease_comparison
+      title: "Memorization by Disease Class (Distinctive)"
+      filename: fig5_disease_comparison.png
+      dpi: 300
+  style: seaborn-v0_8-darkgrid
+  dpi: 300
+  format: png
+
+output:
+  base_dir: results/odir5k_distinctive
+  directories:
+    checkpoints: checkpoints
+    memorization: memorization
+    figures: figures
+    tables: tables
+    logs: logs
+  save_checkpoints: true
+  save_scores: true
+  save_figures: true
+  save_tables: true
+  save_logs: true
+  save_config: true
+
+analysis:
+  summary_stats: [mean, std, median, min, max, q25, q75]
+  risk_levels:
+    high_threshold: 0.3
+    moderate_threshold: 0.1
+  disease_analysis:
+    enabled: true
+    compute_correlations: true
+
+reproducibility:
+  save_config: true
+  deterministic: true
+  seed: 42
+
+validation:
+  check_data_exists: true
+  check_splits_exist: true
+  required_splits: [train, canary, test]
+  min_samples:
+    train: 50
+    canary: 20
+    test: 20
+
+resources:
+  max_gpu_memory_gb: 40
+  empty_cache_frequency: 10
+
+observation_framework:
+  research_question: |
+    Does inducing visual distinctiveness (grayscale) in ODIR-5K's non-distinctive
+    rare classes (Myopia, Glaucoma) create the memorization signal that was absent
+    in baseline (d=0.04, power=10%)? If memorization of these classes increases
+    dramatically, this confirms that distinctiveness — not rarity alone — is the
+    required mechanism, and explains why ODIR-5K showed null results in baseline.
+  sanity_checks:
+    min_valid_score: -1.0
+    max_valid_score: 5.0
+    max_high_risk_percentage: 50.0
+    max_std: 1.0
+
+metadata:
+  experiment_type: distinctive_feature_experiment
+  research_question: "Does inducing distinctiveness in non-distinctive rare classes create memorization?"
+  approach: "Grayscale conversion of rare classes (Myopia, Glaucoma) to induce visual distinctiveness"
+  domain: ophthalmology
+  imaging_modality: fundus_photography
+  parent_experiment: odir5k_baseline

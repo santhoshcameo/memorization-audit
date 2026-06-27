@@ -1,0 +1,141 @@
+# =============================================================================
+# GPU Memory Profiles - AGGRESSIVELY OPTIMIZED FOR MAXIMUM PERFORMANCE
+# =============================================================================
+#
+# CRITICAL OPTIMIZATIONS APPLIED:
+# 1. Disabled cache clearing for A100 (empty_cache_freq: 0) - was a MAJOR bottleneck
+# 2. Increased num_workers and prefetch_factor for better data throughput
+# 3. Enabled drop_last for consistent batch sizes (better GPU utilization)
+# 4. Non-blocking transfers enabled
+# 5. AGGRESSIVE batch sizes to use 75-85% of GPU memory
+#
+# Memory estimates per sample WITH GRADIENTS (approximate, with AMP):
+#   ResNet50 (224x224): ~30MB per sample (model is small)
+#   ViT (224x224):      ~60MB per sample
+#   MAE (224x224):      ~80MB per sample
+#   MedSAM (224x224):   ~100MB per sample
+#
+# For INFERENCE (no gradients): ~3x smaller memory footprint
+# =============================================================================
+
+# 16GB GPU (V100, T4, RTX 4080)
+16gb:
+  description: "Optimized settings for 16GB GPUs"
+
+  batch_sizes:
+    resnet50: 128
+    vit: 64
+    mae: 48
+    medsam: 24
+
+  inference_batch_sizes:
+    resnet50: 384
+    vit: 192
+    mae: 128
+    medsam: 64
+
+  dataloader:
+    num_workers: 8
+    pin_memory: true
+    persistent_workers: true
+    prefetch_factor: 2
+    drop_last: true
+
+  memory:
+    amp_enabled: true
+    gradient_checkpointing: true
+    empty_cache_freq: 50
+    non_blocking: true
+
+  gradient_accumulation:
+    resnet50: 1
+    vit: 2
+    mae: 2
+    medsam: 2
+
+# 40GB GPU (A100-40GB) - YOUR GPU
+40gb:
+  description: "AGGRESSIVE throughput for A100 40GB - targeting 30-35GB usage"
+
+  # AGGRESSIVE batch sizes - targeting 75-85% GPU memory usage
+  # These are safe with AMP (FP16 forward pass)
+  batch_sizes:
+    resnet50: 384           # ~12GB with gradients - can push to 512 if stable
+    vit: 192                # ~12GB with gradients
+    mae: 128                # ~10GB with gradients
+    medsam: 64              # ~6GB with gradients
+
+  # INFERENCE batch sizes (no gradients = 3x capacity)
+  # These are used during memorization measurement
+  inference_batch_sizes:
+    resnet50: 1024          # ~10GB without gradients
+    vit: 512                # ~10GB without gradients
+    mae: 384                # ~10GB without gradients
+    medsam: 256             # ~8GB without gradients
+
+  dataloader:
+    num_workers: 16         # A100 can handle many workers
+    pin_memory: true
+    persistent_workers: true
+    prefetch_factor: 4
+    drop_last: true
+
+  memory:
+    amp_enabled: true
+    gradient_checkpointing: false
+    empty_cache_freq: 0            # DISABLED for A100
+    non_blocking: true
+
+  gradient_accumulation:
+    resnet50: 1
+    vit: 1
+    mae: 1
+    medsam: 1
+
+# 80GB GPU (A100-80GB)
+80gb:
+  description: "Maximum throughput for A100 80GB"
+
+  batch_sizes:
+    resnet50: 768
+    vit: 384
+    mae: 256
+    medsam: 128
+
+  inference_batch_sizes:
+    resnet50: 2048
+    vit: 1024
+    mae: 768
+    medsam: 512
+
+  dataloader:
+    num_workers: 16
+    pin_memory: true
+    persistent_workers: true
+    prefetch_factor: 4
+    drop_last: true
+
+  memory:
+    amp_enabled: true
+    gradient_checkpointing: false
+    empty_cache_freq: 0
+    non_blocking: true
+
+  gradient_accumulation:
+    resnet50: 1
+    vit: 1
+    mae: 1
+    medsam: 1
+
+# Environment variables for optimal performance
+env_vars:
+  OMP_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  CUDA_LAUNCH_BLOCKING: "0"
+  PYTORCH_CUDA_ALLOC_CONF: "max_split_size_mb:512"
+
+# CUDA optimizations (applied automatically)
+cuda:
+  cudnn_benchmark: true
+  tf32_enabled: true
+  matmul_precision: "medium"

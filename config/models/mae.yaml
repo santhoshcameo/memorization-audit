@@ -1,0 +1,178 @@
+# =============================================================================
+# MAE Model Configuration
+# Masked Autoencoder trained from scratch (baseline)
+# =============================================================================
+
+name: mae
+description: Masked Autoencoder trained from random initialization (baseline)
+
+# Model architecture
+architecture:
+  type: mae
+  variant: vit_base_patch16
+  image_size: 224
+  patch_size: 16
+  num_classes: 7
+  
+  # Encoder settings
+  encoder:
+    embed_dim: 768
+    depth: 12
+    num_heads: 12
+    mlp_ratio: 4.0
+  
+  # Decoder settings (for pretraining)
+  decoder:
+    embed_dim: 512
+    depth: 8
+    num_heads: 16
+  
+  # Masking strategy
+  mask_ratio: 0.75  # Mask 75% of patches
+  
+  # Pretrained weights
+  pretrained: false  # Training from scratch - this is the baseline
+  pretrained_source: null
+  pretrained_dataset: none
+  
+  # Feature extraction layer (for memorization measurement)
+  feature_layer: encoder  # Extract from encoder output
+  feature_dim: 768
+
+# Training hyperparameters
+# NOTE: epochs should be set in experiment config, not here
+# The experiment config (e.g., ham1000_baseline.yaml) overrides this value
+training:
+  # Basic settings - epochs defined in experiment configs (typically 30)
+  # MAE trains from scratch, so experiment epoch count applies directly
+  batch_size: 64  # Increased for 40GB GPU
+
+  # Mixed precision training for speed
+  amp:
+    enabled: true
+
+  # Two-stage training (optional, not used in standard pipeline)
+  stages:
+    # Stage 1: MAE pretraining (optional, can skip for quick test)
+    pretrain:
+      enabled: false  # Set to true for full MAE pretraining
+      epochs: 1
+      loss: mse  # Reconstruction loss
+
+    # Stage 2: Fine-tuning for classification
+    # NOTE: When stages are disabled, experiment epochs config is used instead
+    finetune:
+      enabled: false  # Disabled - using direct training with experiment epochs
+      epochs: 30
+      loss: CrossEntropyLoss
+  
+  # Optimizer
+  optimizer:
+    type: AdamW
+    params:
+      lr: 0.0001
+      weight_decay: 0.05
+      betas: [0.9, 0.95]
+  
+  # Learning rate scheduler - T_max should match experiment epochs
+  scheduler:
+    type: CosineAnnealingLR
+    params:
+      T_max: 30  # Matches typical experiment epochs; experiment config can override
+      eta_min: 0.00001
+
+  # Warmup (important for training from scratch) - should be < 20% of total epochs
+  warmup:
+    enabled: true
+    epochs: 5  # 5 epochs warmup for 30 epoch training (17%)
+    start_lr: 0.00001
+  
+  # Gradient clipping
+  grad_clip:
+    enabled: true
+    max_norm: 1.0
+
+# Fine-tuning strategy
+fine_tuning:
+  # Since training from scratch, all layers trained
+  strategy: full
+  
+  # Dropout for regularization
+  dropout: 0.1
+  drop_path_rate: 0.1  # Stochastic depth
+
+# Differential training (for memorization study)
+differential:
+  enabled: true
+  candidate_model: true
+  
+  data_split:
+    train: true
+    canary: true
+    test: false
+
+# Data augmentation (stronger for from-scratch training)
+augmentation:
+  use_dataset_default: false  # Use custom augmentation
+  
+  custom:
+    train:
+      - type: RandomResizedCrop
+        params:
+          size: 224
+          scale: [0.8, 1.0]
+      
+      - type: RandomHorizontalFlip
+        params:
+          p: 0.5
+      
+      - type: ColorJitter
+        params:
+          brightness: 0.4
+          contrast: 0.4
+          saturation: 0.4
+          hue: 0.1
+      
+      - type: RandomGrayscale
+        params:
+          p: 0.2
+      
+      # Additional augmentation for from-scratch training
+      - type: RandomRotation
+        params:
+          degrees: 15
+      
+      - type: RandomAffine
+        params:
+          degrees: 0
+          translate: [0.1, 0.1]
+
+# Regularization
+regularization:
+  dropout: 0.1
+  drop_path: 0.1
+  label_smoothing: 0.1
+  mixup: false
+  cutmix: false
+
+# Evaluation
+evaluation:
+  metrics:
+    - accuracy
+    - f1_score
+    - precision
+    - recall
+  per_class_metrics: true
+
+# Memorization measurement
+memorization:
+  num_augmentations: 5
+  feature_extraction_layer: encoder
+  normalize_features: true
+  distance_metric: l2
+
+# Notes
+notes: |
+  This is a BASELINE model trained from random initialization.
+  Expected to show WEAK memorization compared to pretrained models.
+  Purpose: Validate memorization measurement method and establish baseline.

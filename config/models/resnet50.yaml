@@ -1,0 +1,131 @@
+# =============================================================================
+# ResNet50 Model Configuration
+# Pretrained on ImageNet-1K (1.28M images)
+# =============================================================================
+
+name: resnet50
+description: ResNet50 pretrained on ImageNet-1K
+
+# Model architecture
+architecture:
+  type: resnet
+  variant: resnet50
+  num_classes: 7
+  
+  # Pretrained weights
+  pretrained: true
+  pretrained_source: torchvision  # or path to .pth file
+  pretrained_dataset: imagenet1k
+  pretrained_samples: 1280000  # 1.28M images
+  
+  # Feature extraction layer (for memorization measurement)
+  feature_layer: layer4  # Extract from layer4 (before FC)
+  feature_dim: 2048
+
+# Training hyperparameters
+# NOTE: epochs should be set in experiment config, not here
+# The experiment config (e.g., ham1000_baseline.yaml) overrides this value
+training:
+  # Basic settings - epochs defined in experiment configs (typically 30)
+  batch_size: 128  # Increased for 40GB GPU
+
+  # Mixed precision training for speed
+  amp:
+    enabled: true  # Use automatic mixed precision
+
+  # Optimizer
+  optimizer:
+    type: AdamW
+    params:
+      lr: 0.0001
+      weight_decay: 0.01
+      betas: [0.9, 0.999]
+      eps: 1.0e-08
+
+  # Learning rate scheduler - T_max should match experiment epochs
+  scheduler:
+    type: CosineAnnealingLR
+    params:
+      T_max: 30  # Matches typical experiment epochs; experiment config can override
+      eta_min: 0.00001
+  
+  # Loss function
+  loss: CrossEntropyLoss
+  
+  # Gradient clipping
+  grad_clip:
+    enabled: false
+    max_norm: 1.0
+  
+  # Early stopping
+  early_stopping:
+    enabled: false
+    patience: 10
+    monitor: val_accuracy
+    mode: max
+
+# Fine-tuning strategy
+fine_tuning:
+  # Which layers to train
+  strategy: full  # full, partial, linear_probe
+  
+  # If partial fine-tuning
+  freeze_layers:
+    - conv1
+    - bn1
+    - layer1
+    # Uncomment to freeze more layers
+    # - layer2
+  
+  # Different learning rates for different layers
+  layer_wise_lr:
+    enabled: false
+    backbone_lr_scale: 0.1  # Backbone gets 0.1 * base_lr
+
+# Differential training (for memorization study)
+differential:
+  enabled: true
+  candidate_model: true  # This is the candidate model config
+  
+  # Training data for candidate
+  data_split:
+    train: true       # Uses train split
+    canary: true      # ALSO uses canary split
+    test: false       # Never uses test split
+  
+  # Save both models
+  save_candidate: true
+  save_independent: true  # Independent trained separately
+
+# Data augmentation override (model-specific)
+augmentation:
+  # Use dataset defaults, or override here
+  use_dataset_default: true
+
+# Regularization
+regularization:
+  dropout: 0.0  # ResNet doesn't have dropout by default
+  label_smoothing: 0.0
+  mixup: false
+  cutmix: false
+
+# Evaluation
+evaluation:
+  metrics:
+    - accuracy
+    - f1_score
+    - precision
+    - recall
+  
+  # Class-wise metrics
+  per_class_metrics: true
+  
+  # Confusion matrix
+  confusion_matrix: true
+
+# Memorization measurement
+memorization:
+  num_augmentations: 5
+  feature_extraction_layer: layer4
+  normalize_features: true
+  distance_metric: l2  # l2, cosine

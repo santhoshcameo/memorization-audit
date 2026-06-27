@@ -1,0 +1,71 @@
+# =============================================================================
+# Default Configuration for Medical Memorization Study
+# Edit this file to change global settings
+# Specific experiments override these defaults
+# =============================================================================
+
+# Project metadata
+project:
+  name: medical_memorization_study
+  version: 1.0.0
+  description: Privacy vulnerabilities in fine-tuned medical foundation models
+
+# Paths (relative to project root)
+paths:
+  data_root: data
+  results_root: results
+  config_root: config
+
+# Global training settings
+training:
+  device: cuda  # cuda or cpu
+  num_workers: 4
+  pin_memory: true
+  mixed_precision: false  # Use AMP for faster training
+  gradient_accumulation_steps: 1
+
+# Reproducibility
+reproducibility:
+  deterministic: true
+  benchmark: false  # Set to true for faster training (less reproducible)
+
+# Logging
+logging:
+  level: INFO  # DEBUG, INFO, WARNING, ERROR
+  log_to_file: true
+  log_to_tensorboard: true
+  print_freq: 10  # Print every N batches
+
+# Checkpointing
+checkpointing:
+  save_best: true
+  save_last: true
+  save_every_n_epochs: null  # null = don't save intermediate
+  monitor: accuracy  # metric to monitor for best checkpoint
+
+# Memorization evaluation
+memorization:
+  num_augmentations: 5
+  threshold_high_risk: 0.3
+  threshold_moderate: 0.1
+  save_per_sample_scores: true
+
+# Visualization
+visualization:
+  dpi: 300
+  format: png  # png, pdf, svg
+  style: seaborn-v0_8-darkgrid
+  figsize_default: [10, 6]
+  color_palette: Set2
+
+# Statistical analysis
+statistics:
+  confidence_level: 0.95
+  multiple_comparison_correction: bonferroni  # bonferroni, fdr, none
+  effect_size_method: cohen  # cohen's d
+
+# Hardware optimization
+hardware:
+  amp: false  # Automatic mixed precision
+  cudnn_benchmark: false
+  dataloader_workers: 4

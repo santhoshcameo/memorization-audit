@@ -1,0 +1,203 @@
+# =============================================================================
+# ODIR-5K Baseline Experiment Configuration
+# Ocular Disease Recognition - Fundus Photography
+# =============================================================================
+
+name: odir5k_baseline_comparison
+description: |
+  Systematic comparison of memorization across four training paradigms
+  on ODIR-5K (Ocular Disease Intelligent Recognition) dataset.
+
+  Disease Classes:
+  - Normal, Diabetes, Glaucoma, Cataract, AMD, Hypertension, Myopia, Other
+
+  This experiment observes memorization patterns across disease classes
+  without predicting specific outcomes.
+
+# Dataset
+dataset: odir5k
+
+# Models to train and evaluate
+models:
+  - mae          # Baseline: trained from scratch
+  - resnet50     # ImageNet-1K (1.28M images)
+  - vit          # ImageNet-21K (14M images)
+  - medsam       # Medical (1.57M images)
+
+# Global training settings
+training:
+  seed: 42
+  device: cuda
+  # num_workers is auto-detected from gpu_profiles.yaml based on GPU memory
+
+  # Enable mixed precision for better GPU utilization
+  amp: true
+
+  # Epoch count
+  epochs: 30
+
+  # Early stopping
+  early_stopping:
+    enabled: false
+    patience: 10
+    monitor: val_accuracy
+
+  # Checkpointing
+  save_best: true
+  save_last: true
+
+# Evaluation settings
+evaluation:
+  # Memorization measurement
+  memorization:
+    enabled: true
+    num_augmentations: 10
+    save_per_sample_scores: true
+
+    # Risk thresholds
+    high_risk_threshold: 0.3
+    moderate_risk_threshold: 0.1
+
+  # Standard metrics
+  metrics:
+    - accuracy
+    - f1_score
+    - precision
+    - recall
+    - per_class_accuracy
+
+  # Statistical tests
+  statistical_tests:
+    enabled: true
+    tests:
+      - ttest_ind
+      - anova
+      - cohens_d
+      - wilcoxon
+
+    multiple_comparison_correction: bonferroni
+    alpha: 0.05
+    confidence_level: 0.95
+    bootstrap_samples: 1000
+
+# Visualization
+visualization:
+  enabled: true
+
+  plots:
+    - type: histogram_comparison
+      title: "Memorization Distribution Across Models (ODIR-5K)"
+      filename: fig1_comparison_histograms.png
+      dpi: 300
+
+    - type: boxplot_comparison
+      title: "Memorization Box Plots (ODIR-5K)"
+      filename: fig2_comparison_boxplots.png
+      dpi: 300
+
+    - type: violin_plot
+      title: "Memorization Violin Plots (ODIR-5K)"
+      filename: fig3_comparison_violins.png
+      dpi: 300
+
+    - type: disease_comparison
+      title: "Memorization by Ocular Disease Class"
+      filename: fig5_disease_comparison.png
+      dpi: 300
+
+    - type: disease_heatmap
+      title: "Model × Disease Heatmap (ODIR-5K)"
+      filename: fig6_disease_heatmap.png
+      dpi: 300
+
+  style: seaborn-v0_8-darkgrid
+  dpi: 300
+  format: png
+
+# Output settings
+output:
+  base_dir: results/odir5k_baseline
+
+  directories:
+    checkpoints: checkpoints
+    memorization: memorization
+    figures: figures
+    tables: tables
+    logs: logs
+
+  save_checkpoints: true
+  save_scores: true
+  save_figures: true
+  save_tables: true
+  save_logs: true
+  save_config: true
+
+# Analysis
+analysis:
+  summary_stats:
+    - mean
+    - std
+    - median
+    - min
+    - max
+    - q25
+    - q75
+
+  risk_levels:
+    high_threshold: 0.3
+    moderate_threshold: 0.1
+
+  disease_analysis:
+    enabled: true
+    compute_correlations: true
+
+# Reproducibility
+reproducibility:
+  save_config: true
+  deterministic: true
+  seed: 42
+
+# Validation
+validation:
+  check_data_exists: true
+  check_splits_exist: true
+  required_splits: [train, canary, test]
+  min_samples:
+    train: 50
+    canary: 20
+    test: 20
+
+# Resources
+resources:
+  max_gpu_memory_gb: 40
+  empty_cache_frequency: 10
+
+# Observation framework (no hypothesis bias - we observe what happens)
+observation_framework:
+  research_question: |
+    How does pretraining paradigm affect memorization of patient data?
+    We compare four approaches without predicting specific outcomes:
+    - MAE: Random initialization (no pretraining)
+    - ResNet50: ImageNet-1K pretrained (1.28M natural images)
+    - ViT: ImageNet-21K pretrained (14M natural images)
+    - MedSAM: Medical domain pretrained (1.57M medical images)
+
+  # Sanity checks (data quality, not hypothesis validation)
+  sanity_checks:
+    # All models should produce valid memorization scores
+    min_valid_score: -1.0
+    max_valid_score: 5.0
+
+    # All models should have < 50% high-risk samples (otherwise data issue)
+    max_high_risk_percentage: 50.0
+
+    # Standard deviations should be reasonable (not extreme)
+    max_std: 1.0
+
+# Metadata
+metadata:
+  experiment_type: baseline_comparison
+  research_question: "How does pretraining paradigm affect memorization of patient data?"
+  approach: "Systematic comparison across four training paradigms without prediction bias"
+  domain: ophthalmology
+  imaging_modality: fundus_photography

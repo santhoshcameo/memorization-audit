@@ -1,0 +1,32 @@
+# Core dependencies
+torch>=2.0.0
+torchvision>=0.15.0
+numpy>=1.24.0
+pandas>=2.0.0
+scipy>=1.10.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Configuration
+pyyaml>=6.0
+
+# Progress bars
+tqdm>=4.65.0
+
+# Medical imaging (optional, for MedSAM)
+segment-anything>=1.0
+
+# Image models (for ViT)
+timm>=0.9.0
+
+# Utilities
+pillow>=9.5.0
+scikit-learn>=1.2.0
+
+# Logging
+tensorboard>=2.13.0
+
+# For tables
+tabulate>=0.9.0

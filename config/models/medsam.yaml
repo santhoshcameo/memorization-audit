@@ -1,0 +1,182 @@
+# =============================================================================
+# MedSAM Model Configuration
+# Segment Anything for Medical Images pretrained on 1.57M medical images
+# =============================================================================
+
+name: medsam
+description: MedSAM (Segment Anything for Medical) pretrained on medical images
+
+# Model architecture
+architecture:
+  type: medsam
+  variant: vit_b  # ViT-Base encoder
+  image_size: 224  # Standardized to 224×224 for fair model comparison
+  num_classes: 7
+  
+  # SAM components
+  components:
+    image_encoder: vit_b  # ViT-Base (89M params)
+    prompt_encoder: false  # Not used for classification
+    mask_decoder: false    # Not used for classification
+  
+  # Pretrained weights
+  pretrained: true
+  pretrained_source: medsam_vit_b.pth  # Relative to project root
+  pretrained_dataset: medical_mixed
+  pretrained_samples: 1570000  # 1.57M medical images
+  pretrained_modalities:
+    - CT
+    - MRI
+    - X-ray
+    - Ultrasound
+    - Dermoscopy
+    - Endoscopy
+    - Microscopy
+    - OCT
+    - Fundus
+    - Mammography
+  
+  # Feature extraction layer
+  feature_layer: encoder  # Image encoder output
+  feature_dim: 256  # MedSAM encoder outputs 256-dim features
+
+# Training hyperparameters
+# NOTE: epochs should be set in experiment config, not here
+# The experiment config (e.g., ham1000_baseline.yaml) overrides this value
+training:
+  # Basic settings - epochs defined in experiment configs (typically 30)
+  # This value is a fallback only; experiment config takes precedence
+  batch_size: 8   # Increased for 40GB GPU with 1024×1024 images
+
+  # Mixed precision training (critical for large images)
+  amp:
+    enabled: true  # Enables ~2x memory savings
+
+  # Gradient accumulation (to simulate larger batch)
+  gradient_accumulation_steps: 2  # Effective batch = 8 × 2 = 16
+
+  # Optimizer
+  optimizer:
+    type: AdamW
+    params:
+      lr: 0.0001
+      weight_decay: 0.01
+      betas: [0.9, 0.999]
+
+  # Learning rate scheduler - T_max should match experiment epochs
+  # When experiment sets epochs: 30, scheduler will use T_max: 30
+  scheduler:
+    type: CosineAnnealingLR
+    params:
+      T_max: 30  # Matches typical experiment epochs; experiment config can override
+      eta_min: 0.00001
+
+  # Warmup - should be < 20% of total epochs
+  warmup:
+    enabled: true
+    epochs: 5  # 5 epochs warmup for 30 epoch training (17%)
+    start_lr: 0.00001
+  
+  # Loss function
+  loss: CrossEntropyLoss
+  
+  # Gradient clipping (important for large model)
+  grad_clip:
+    enabled: true
+    max_norm: 1.0
+
+# Fine-tuning strategy
+fine_tuning:
+  # Strategy for adapting segmentation model to classification
+  strategy: full  # Train entire encoder
+  
+  # Alternative: Freeze early layers
+  freeze_encoder_layers:
+    enabled: false
+    num_layers: 6  # Freeze first 6 transformer blocks
+
+# Differential training
+differential:
+  enabled: true
+  candidate_model: true
+  
+  data_split:
+    train: true
+    canary: true
+    test: false
+
+# Data augmentation (standardized to 224×224 for fair comparison)
+augmentation:
+  use_dataset_default: false
+
+  custom:
+    train:
+      - type: RandomResizedCrop
+        params:
+          size: 224  # Standardized to 224×224 for fair model comparison
+          scale: [0.8, 1.0]
+      
+      - type: RandomHorizontalFlip
+        params:
+          p: 0.5
+      
+      - type: ColorJitter
+        params:
+          brightness: 0.4
+          contrast: 0.4
+          saturation: 0.4
+          hue: 0.1
+      
+      - type: RandomGrayscale
+        params:
+          p: 0.2
+
+# Regularization
+regularization:
+  dropout: 0.3  # Add dropout to classification head
+  label_smoothing: 0.0
+
+# Evaluation
+evaluation:
+  metrics:
+    - accuracy
+    - f1_score
+    - precision
+    - recall
+  per_class_metrics: true
+
+# Memorization measurement
+memorization:
+  num_augmentations: 5
+  feature_extraction_layer: encoder_output
+  normalize_features: true
+  distance_metric: l2
+
+# Memory optimization (for large images)
+memory_optimization:
+  # Use gradient checkpointing to save memory
+  gradient_checkpointing: false
+  
+  # Clear cache between batches
+  empty_cache_freq: 10
+
+# Model-specific notes
+notes: |
+  MedSAM is pretrained on 1.57M medical images across 10 modalities.
+  
+  Key differences from general models:
+  1. Medical-specific pretraining (not natural images)
+  2. Diverse modalities (CT, MRI, X-ray, etc.)
+  3. Larger input size (1024×1024 vs 224×224)
+  
+  Expected result: LOWEST memorization due to:
+  - Domain-aligned pretraining (medical → medical)
+  - Large and diverse pretraining dataset
+  - Better regularization from multi-modal training
+  
+  Comparison:
+  - ResNet50: General domain, limited pretraining → HIGH memorization
+  - ViT: General domain, large pretraining → MODERATE memorization  
+  - MedSAM: Medical domain, large pretraining → LOW memorization
+  
+  Important: Requires ~20GB GPU memory during training!

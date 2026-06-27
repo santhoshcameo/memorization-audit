@@ -1,0 +1,139 @@
+# =============================================================================
+# Retinal OCT Distinctive Feature Experiment - Level 2: Color Inversion
+# Rare classes (DRUSEN, DME) have pixel intensities inverted.
+# Moderate visual distinctiveness.
+# =============================================================================
+
+name: retinal_oct_distinctive_invert
+description: |
+  Feature distinctiveness experiment on Retinal OCT (Level 2: Color Inversion).
+  Rare disease classes (DRUSEN, DME) are color-inverted
+  while all other classes remain unchanged.
+
+dataset: retinal_oct
+
+distinctive_classes:
+  - DRUSEN
+  - DME
+
+distinctive_transform: invert
+
+models:
+  - resnet50
+
+training:
+  seed: 42
+  device: cuda
+  amp: true
+  epochs: 30
+  early_stopping:
+    enabled: false
+    patience: 10
+    monitor: val_accuracy
+  save_best: true
+  save_last: true
+
+evaluation:
+  memorization:
+    enabled: true
+    num_augmentations: 10
+    save_per_sample_scores: true
+    high_risk_threshold: 0.3
+    moderate_risk_threshold: 0.1
+  metrics:
+    - accuracy
+    - f1_score
+    - precision
+    - recall
+    - per_class_accuracy
+  statistical_tests:
+    enabled: true
+    tests:
+      - ttest_ind
+      - anova
+      - cohens_d
+      - wilcoxon
+    multiple_comparison_correction: bonferroni
+    alpha: 0.05
+    confidence_level: 0.95
+    bootstrap_samples: 1000
+
+visualization:
+  enabled: true
+  plots:
+    - type: histogram_comparison
+      title: "Memorization Distribution (Retinal OCT Invert)"
+      filename: fig1_comparison_histograms.png
+      dpi: 300
+    - type: boxplot_comparison
+      title: "Memorization Box Plots (Retinal OCT Invert)"
+      filename: fig2_comparison_boxplots.png
+      dpi: 300
+    - type: disease_comparison
+      title: "Memorization by Disease Class (Invert)"
+      filename: fig5_disease_comparison.png
+      dpi: 300
+  style: seaborn-v0_8-darkgrid
+  dpi: 300
+  format: png
+
+output:
+  base_dir: results/retinal_oct_distinctive_invert
+  directories:
+    checkpoints: checkpoints
+    memorization: memorization
+    figures: figures
+    tables: tables
+    logs: logs
+  save_checkpoints: true
+  save_scores: true
+  save_figures: true
+  save_tables: true
+  save_logs: true
+  save_config: true
+
+analysis:
+  summary_stats: [mean, std, median, min, max, q25, q75]
+  risk_levels:
+    high_threshold: 0.3
+    moderate_threshold: 0.1
+  disease_analysis:
+    enabled: true
+    compute_correlations: true
+
+reproducibility:
+  save_config: true
+  deterministic: true
+  seed: 42
+
+validation:
+  check_data_exists: true
+  check_splits_exist: true
+  required_splits: [train, canary, test]
+  min_samples:
+    train: 50
+    canary: 20
+    test: 20
+
+resources:
+  max_gpu_memory_gb: 40
+  empty_cache_frequency: 10
+
+observation_framework:
+  research_question: |
+    Does color inversion of rare disease images (moderate distinctiveness)
+    amplify the memorization effect in Retinal OCT?
+  sanity_checks:
+    min_valid_score: -1.0
+    max_valid_score: 5.0
+    max_high_risk_percentage: 50.0
+    max_std: 1.0
+
+metadata:
+  experiment_type: distinctive_feature_experiment
+  research_question: "Does moderate visual distinctiveness (inversion) amplify the paradox?"
+  approach: "Color inversion of rare classes"
+  domain: ophthalmology
+  imaging_modality: optical_coherence_tomography
+  parent_experiment: retinal_oct_baseline
+  distinctiveness_level: 2

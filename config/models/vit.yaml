@@ -1,0 +1,152 @@
+# =============================================================================
+# ViT-Base Model Configuration  
+# Vision Transformer pretrained on ImageNet-21K (14M images)
+# =============================================================================
+
+name: vit
+description: Vision Transformer Base pretrained on ImageNet-21K
+
+# Model architecture
+architecture:
+  type: vit
+  variant: vit_base_patch16_224
+  image_size: 224
+  patch_size: 16
+  num_classes: 7
+  
+  # Architecture details
+  embed_dim: 768
+  depth: 12
+  num_heads: 12
+  mlp_ratio: 4.0
+  qkv_bias: true
+  
+  # Pretrained weights
+  pretrained: true
+  pretrained_source: timm  # Using timm library
+  pretrained_dataset: imagenet21k
+  pretrained_samples: 14000000  # 14M images
+  
+  # Feature extraction layer (for memorization measurement)
+  feature_layer: head  # CLS token after final layer
+  feature_dim: 768
+
+# Training hyperparameters
+# NOTE: epochs should be set in experiment config, not here
+# The experiment config (e.g., ham1000_baseline.yaml) overrides this value
+training:
+  # Basic settings - epochs defined in experiment configs (typically 30)
+  batch_size: 64  # Increased for 40GB GPU (ViT needs more memory)
+
+  # Optimizer
+  optimizer:
+    type: AdamW
+    params:
+      lr: 0.0001
+      weight_decay: 0.01
+      betas: [0.9, 0.999]
+      eps: 1.0e-08
+
+  # Learning rate scheduler - T_max should match experiment epochs
+  scheduler:
+    type: CosineAnnealingLR
+    params:
+      T_max: 30  # Matches typical experiment epochs; experiment config can override
+      eta_min: 0.00001
+
+  # Warmup - should be < 20% of total epochs
+  warmup:
+    enabled: true
+    epochs: 5  # 5 epochs warmup for 30 epoch training (17%)
+    start_lr: 0.00001
+  
+  # Loss function
+  loss: CrossEntropyLoss
+  
+  # Gradient clipping
+  grad_clip:
+    enabled: true
+    max_norm: 1.0
+  
+  # Mixed precision training
+  amp:
+    enabled: true  # Enabled for 40GB GPU - faster training
+
+# Fine-tuning strategy
+fine_tuning:
+  # Which layers to train
+  strategy: full  # full, partial, linear_probe
+  
+  # Stochastic depth (drops transformer blocks during training)
+  drop_path_rate: 0.1
+  
+  # Layer-wise learning rate decay
+  layer_decay:
+    enabled: false
+    decay_rate: 0.65
+
+# Differential training (for memorization study)
+differential:
+  enabled: true
+  candidate_model: true
+  
+  data_split:
+    train: true
+    canary: true
+    test: false
+
+# Data augmentation
+augmentation:
+  use_dataset_default: true
+
+# Regularization
+regularization:
+  dropout: 0.0  # ViT uses drop_path instead
+  drop_path: 0.1  # Stochastic depth
+  label_smoothing: 0.0
+  
+  # Advanced augmentation (optional)
+  mixup:
+    enabled: false
+    alpha: 0.8
+  
+  cutmix:
+    enabled: false
+    alpha: 1.0
+  
+  # RandAugment (optional)
+  randaugment:
+    enabled: false
+    num_ops: 2
+    magnitude: 9
+
+# Evaluation
+evaluation:
+  metrics:
+    - accuracy
+    - f1_score
+    - precision
+    - recall
+  per_class_metrics: true
+  confusion_matrix: true
+
+# Memorization measurement
+memorization:
+  num_augmentations: 5
+  feature_extraction_layer: cls_token  # Use CLS token
+  normalize_features: true
+  distance_metric: l2
+
+# Model-specific notes
+notes: |
+  ViT-Base pretrained on ImageNet-21K (14M images).
+  Expected to show LOWER memorization than ResNet50 due to:
+  1. Larger pretraining dataset (14M vs 1.28M)
+  2. Better regularization (drop_path, attention)
+  3. Transformer architecture
+  
+  Key comparison:
+  - ResNet50: ImageNet-1K (1.28M)
+  - ViT-Base: ImageNet-21K (14M) ← 11× more data!
+  
+  Note: Architecture effect is confounded with pretraining scale.

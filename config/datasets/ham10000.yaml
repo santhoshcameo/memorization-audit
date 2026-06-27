@@ -1,0 +1,108 @@
+name: ham10000
+description: HAM10000 Dermatoscopy Dataset for skin lesion classification
+info:
+  full_name: Human Against Machine with 10000 training images
+  paper: https://arxiv.org/abs/1803.10417
+  source: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/DBW86T
+  license: CC BY-NC 4.0
+  num_images: 10015
+  num_classes: 7
+  image_size:
+  - 600
+  - 450
+paths:
+  images: data/raw/HAM10000
+  metadata: data/raw/HAM10000/HAM10000_metadata.csv
+splits:
+  train: 700
+  canary: 150
+  test: 117
+classes:
+  names:
+  - akiec
+  - bcc
+  - bkl
+  - df
+  - mel
+  - nv
+  - vasc
+  descriptions:
+    akiec: Actinic keratoses and intraepithelial carcinoma (rare)
+    bcc: Basal cell carcinoma (common)
+    bkl: Benign keratosis-like lesions (common)
+    df: Dermatofibroma (rare)
+    mel: Melanoma (moderate)
+    nv: Melanocytic nevi (very common)
+    vasc: Vascular lesions (rare)
+  frequency:
+    akiec: rare
+    bcc: common
+    bkl: common
+    df: rare
+    mel: moderate
+    nv: very_common
+    vasc: rare
+preprocessing:
+  target_size: 224
+  normalize:
+    mean:
+    - 0.485
+    - 0.456
+    - 0.406
+    std:
+    - 0.229
+    - 0.224
+    - 0.225
+augmentation:
+  train:
+    enabled: true
+    transforms:
+    - type: RandomResizedCrop
+      params:
+        size: 224
+        scale:
+        - 0.8
+        - 1.0
+    - type: RandomHorizontalFlip
+      params:
+        p: 0.5
+    - type: ColorJitter
+      params:
+        brightness: 0.4
+        contrast: 0.4
+        saturation: 0.4
+        hue: 0.1
+    - type: RandomGrayscale
+      params:
+        p: 0.2
+  memorization:
+    enabled: true
+    transforms:
+    - type: RandomResizedCrop
+      params:
+        size: 224
+    - type: RandomHorizontalFlip
+      params:
+        p: 0.5
+    - type: ColorJitter
+      params:
+        brightness: 0.8
+        contrast: 0.8
+        saturation: 0.8
+        hue: 0.2
+    - type: RandomGrayscale
+      params:
+        p: 0.2
+  val:
+    enabled: true
+    transforms:
+    - type: Resize
+      params:
+        size: 256
+    - type: CenterCrop
+      params:
+        size: 224
+dataloader:
+  shuffle: true
+  pin_memory: true
+  drop_last: false
