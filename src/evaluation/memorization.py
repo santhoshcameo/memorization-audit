@@ -1,3 +1,10 @@
+# ---------------------------------------------------------------------------
+# Portions of this file (the differential candidate/independent M(x) scoring)
+# are adapted from "Localizing Memorization in SSL Vision Encoders"
+# (Wang et al., NeurIPS 2024):
+# https://github.com/sprintml/LocalizingMemorizationInSSL
+# The remaining code is original to this project.
+# ---------------------------------------------------------------------------
 """
 Memorization Measurement - FULLY OPTIMIZED FOR A100
 Computes memorization scores using differential privacy approach
