@@ -26,6 +26,6 @@ medmem = "medmem.__main__:main"
 [project.optional-dependencies]
 dev = ["pytest", "pytest-cov"]
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["medmem*"]
+[tool.setuptools]
+packages = ["medmem"]
+package-dir = {"medmem" = "."}
