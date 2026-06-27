@@ -202,3 +202,9 @@ pipeline used throughout the paper and emits a per-class privacy-risk report.
 Per experiment, results are written under `results/<experiment>/`:
 trained models, per-sample memorization scores (CSV), MIA results (JSON),
 rarity/statistical analyses, and figures.
+
+## Acknowledgements
+The differential-training and memorization-scoring implementation adapts code
+from "Localizing Memorization in SSL Vision Encoders" (Wang, Dziedzic, Backes,
+Boenisch, NeurIPS 2024), released at
+https://github.com/sprintml/LocalizingMemorizationInSSL.
