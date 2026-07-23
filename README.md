@@ -1,8 +1,8 @@
 # Memorization Audit Toolkit
 
 Code accompanying the manuscript "Visual distinctiveness drives memorization
-beyond rarity in fine-tuned medical imaging models" (submitted to npj Digital
-Medicine).
+beyond rarity in fine-tuned medical imaging models" (under review at Scientific
+Reports).
 
 ## Repository layout
 - `medmem/`   — one-command memorization-audit library (differential training,
